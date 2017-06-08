@@ -110,6 +110,18 @@ class bsHelper extends AppHelper {
                 "default" => "div"
             ]
         ], 
+        "table" => [
+            "contextual" => [
+                "list" => ["striped", "bordered", "hover", "condensed", 'responsive'],
+                "require" => [],
+                "default" => ""
+            ],
+            "classes" => ["table"],
+            "tags" => [
+                "list" => "table",
+                "default" => "table"
+            ]
+        ],
         "progress-bar", 
         "list-group-item", 
         "navbar" => [
