@@ -1180,6 +1180,11 @@ class bsHelper extends AppHelper {
         // thead
         $columns = [];
         $thead = $tbody = $tfoot = $table_caption = '';
+        $tfoot_data = [];
+        if (isset($options['tfoot'])){
+            $tfoot_data = $options['tfoot'];
+            unset($options['tfoot']);
+        }
         
         $first_datum = [];
         if ($data && !empty($data[0])){
@@ -1187,6 +1192,16 @@ class bsHelper extends AppHelper {
         }
         
         $modelName = empty($options['modelName']) ? null : $options['modelName'];
+        
+        $primaryKey = empty($options['primaryKey']) ? null : $options['primaryKey'];
+        
+        if (!$primaryKey){
+            $primaryKeyInfo = $this->primaryKey($modelName);
+            if ($primaryKeyInfo){
+                $primaryKey = $primaryKeyInfo['model'] . '.' . $primaryKeyInfo["name"];
+            }
+        }
+
         
         $thead_tr = '';
         foreach ($options['fields'] as $one => $two){
@@ -1249,7 +1264,7 @@ class bsHelper extends AppHelper {
                         array_key_exists("comment", $column['dbinfo']) &&
                             !empty( $column['dbinfo']["comment"] )
                             ? $column['dbinfo']["comment"]
-                            : $column['fieldName'];
+                            : Inflector::humanize( $column['fieldName'] );
                 }
             }
             
@@ -1281,7 +1296,8 @@ class bsHelper extends AppHelper {
                 $column['hide'] = false;
             }
             
-            
+            $th_options['data-fieldName'] = $column['fullFieldName'];
+            $th_options['data-type'] = $column['type'];
             
             if ( !$column['hide'] && !empty($column['header']) ){
                 $thead_tr .= $this->tag('th', $column['header'], $th_options);
@@ -1290,18 +1306,52 @@ class bsHelper extends AppHelper {
             $columns[] = $column;
         }
         $thead = $this->tag('tr', $thead_tr);
+        unset($options['fields']);
         
         debug(compact('columns'));
-        
-        
+
         // tbody
         
         foreach ($data as $datum){
             $tr = '';
+            $tr_options = [];
+            
+            if (isset($datum['__tr'])){
+                $tr_options = $datum['__tr'];
+            }
+            
+            //primary key id
+            if ($primaryKey){
+                list($primaryModel, $primaryField) = explode('.', $primaryKey);
+                if (array_key_exists($primaryModel, $datum)
+                    && array_key_exists($primaryField, $datum[$modelName])
+                    ){
+                    $tr_options['data-id'] = $datum[$primaryModel][$primaryField];
+                        }
+            }
+                
             foreach ($columns as $column){
                $value = null;
-               $td_value = null ;               
+               $td_value = $predefined_td_content = null ;
                $td_options = [];
+               $predefined_td =null;
+               
+               if ( !empty($column['fullFieldName']) && !empty($datum['__td'][ $column['fullFieldName'] ]) ){
+                   $predefined_td = $datum['__td'][ $column['fullFieldName'] ];
+                   if (is_string($predefined_td)){
+                       $predefined_td_content = $predefined_td;
+                   }
+                   if (is_array($predefined_td)){
+                       if ( !empty( $predefined_td['content'] ) ){
+                           $predefined_td_content = $predefined_td['content'];
+                           unset( $predefined_td['content'] );
+                           $td_options = $predefined_td;
+                           //$predefined_td
+                       }
+                   }
+               }
+               
+               //if ()
                
                if (
                        array_key_exists('modelName', $column) &&
@@ -1327,16 +1377,54 @@ class bsHelper extends AppHelper {
                        break;
                }
                
-                             
-               $tr .= $this->tag("td", $td_value, $td_options);
+                         
+               if (!$column['hide']){
+                    $tr .= $this->tag("td", $predefined_td_content ? : $td_value, $td_options);
+               }
             }
-            $tr_options = [];
+            
             $tbody .= $this->tag('tr', $tr, $tr_options);
         }
         
         // tfoot
+        if ($tfoot_data){
+            $tfoot_tr = '';
+            $tfoot_tr_options = [];
+            
+            if (!empty($tfoot_data['options'])){
+                $tfoot_tr_options = $tfoot_data['options'];
+            }
+            
+            foreach ($columns as $column){
+                $tfoot_value = '';
+                $tfoot_options = [];
+                if ( !empty($column['fullFieldName']) 
+                        && !empty( $tfoot_data[ $column['fullFieldName'] ] ) ){                    
+                    
+                    
+                    $tfoot_params = $tfoot_data[ $column['fullFieldName'] ];
+                    
+                    if (is_array($tfoot_params) ){
+                        if (isset($tfoot_params['value'])){
+                            $tfoot_value = $tfoot_params['value'];
+                            unset($tfoot_params['value']);
+                            
+                            $tfoot_options = $tfoot_params;
+                        }
+                    } else {
+                        $tfoot_value = $tfoot_params;
+                    }
+                    
+                    
+                }
+                if (!$column['hide']){
+                    $tfoot_tr .= $this->tag('td', $tfoot_value, $tfoot_options);
+                }
+            }
+            $tfoot .= $this->tag('tr', $tfoot_tr, $tfoot_tr_options);
+        }
         
-        $table_options = [];
+        $table_options = $options;
         
         $table_options = $this->addClass($table_options, 'table');
         $table_options = $this->addClass($table_options, 'table-bordered');
