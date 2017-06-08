@@ -1176,6 +1176,179 @@ class bsHelper extends AppHelper {
                  );
     }
     
+    public function table($options = [], $data = []){
+        // thead
+        $columns = [];
+        $thead = $tbody = $tfoot = $table_caption = '';
+        
+        $first_datum = [];
+        if ($data && !empty($data[0])){
+            $first_datum = $data[0];
+        }
+        
+        $modelName = empty($options['modelName']) ? null : $options['modelName'];
+        
+        $thead_tr = '';
+        foreach ($options['fields'] as $one => $two){
+            $column = [];
+            if (is_int( $one) && is_string($two)){
+                $column = [
+                    "field" => $two
+                ];
+            }
+            
+            if (is_int($one) && is_array($two) ){
+                $column = $two;
+            }
+            
+            if (is_string($one) && is_array($two)){
+                $column = $two;
+                if (empty( $column["field"] )){
+                    $column["field"] = $one;
+                }
+            }
+            
+            $th_options = [];
+            
+            
+            //check full field name
+            if (!isset($column['field'])){
+                $column['field'] = null;
+            }
+            
+            if ($column['field']){
+                if (strpos($column['field'], ".") !== false){
+                    list($column['modelName'], $column['fieldName']) =
+                            explode(".", $column['field']);
+                } else {
+                    if ($modelName){
+                        $column['modelName'] = $modelName;
+                        $column['fieldName'] = $column['field'];
+                    }
+                }
+            }
+            
+            if (!empty($column['modelName']) && !empty($column['fieldName']) ){
+                $column['fullFieldName'] = join('.', [
+                    $column['modelName'],
+                    $column['fieldName']
+                ]);
+            }
+            
+            //check fields exists in first datume
+            $column['exists'] =  
+                    array_key_exists('modelName', $column) 
+                 && array_key_exists( $column['modelName'] , $first_datum) 
+                 && array_key_exists( $column['fieldName'] , $first_datum[ $column['modelName'] ]);
+            
+            //header
+            if (empty($column['header'])){
+                if ( !empty( $column['fullFieldName'] ) ){
+                    $column['dbinfo'] = $this->fieldInfo($column['fullFieldName']);
+                    $column['header'] = 
+                        array_key_exists("comment", $column['dbinfo']) &&
+                            !empty( $column['dbinfo']["comment"] )
+                            ? $column['dbinfo']["comment"]
+                            : $column['fieldName'];
+                }
+            }
+            
+            //value types
+            if (empty($column['type'])){
+                if (!empty($column["dbinfo"]["type"])){
+                   $column['type'] = $column["dbinfo"]["type"];
+               } else {
+                   $column['type'] = "string";
+               }
+            }
+            
+            if (!empty($column['type'])){
+                switch ($column['type']) {
+                    case "integer":
+                        $th_options = $this->addClass($th_options, "text-right");
+
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            
+            //visible column
+            if (isset($column['hide']) && $column['hide'] === true){
+                
+            } else {
+                $column['hide'] = false;
+            }
+            
+            
+            
+            if ( !$column['hide'] && !empty($column['header']) ){
+                $thead_tr .= $this->tag('th', $column['header'], $th_options);
+            }
+                    
+            $columns[] = $column;
+        }
+        $thead = $this->tag('tr', $thead_tr);
+        
+        debug(compact('columns'));
+        
+        
+        // tbody
+        
+        foreach ($data as $datum){
+            $tr = '';
+            foreach ($columns as $column){
+               $value = null;
+               $td_value = null ;               
+               $td_options = [];
+               
+               if (
+                       array_key_exists('modelName', $column) &&
+                       array_key_exists('fieldName', $column) &&
+                       array_key_exists($column['modelName'], $datum) &&
+                       array_key_exists($column['fieldName'], $datum[ $column['modelName'] ]) 
+                       ){
+                   $value = $datum[ $column['modelName'] ][ $column['fieldName'] ];
+               }
+               
+               $td_value = $value;
+               
+               switch ($column['type']) {
+                   case "integer":
+                       $td_options = $this->addClass($td_options, "text-right");
+
+                       break;
+                   case "boolean":
+                       $td_value = $value ? "true" : "false";
+                       break;
+
+                   default:
+                       break;
+               }
+               
+                             
+               $tr .= $this->tag("td", $td_value, $td_options);
+            }
+            $tr_options = [];
+            $tbody .= $this->tag('tr', $tr, $tr_options);
+        }
+        
+        // tfoot
+        
+        $table_options = [];
+        
+        $table_options = $this->addClass($table_options, 'table');
+        $table_options = $this->addClass($table_options, 'table-bordered');
+        
+        return $this->tag("table", [
+            $thead ? $this->tag("thead", $thead, []) : null,
+            $table_caption ? $this->tag('caption', $table_caption, []) : null,
+            $tbody ? $this->tag("tbody", $tbody, []) : null,
+            $tfoot ? $this->tag("tfoot", $tfoot, []) : null,
+        ], $table_options);
+    }
+    
     public function navbar($options = []){
         return $this->el("navbar", $options);
     }
