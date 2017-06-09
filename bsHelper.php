@@ -120,6 +120,12 @@ class bsHelper extends AppHelper {
             "tags" => [
                 "list" => "table",
                 "default" => "table"
+            ],
+            'icons' => [
+                'boolean' => [
+                    "true"  => "fa-check-square-o",
+                    "false" => "fa-square-o"
+                ]
             ]
         ],
         "progress-bar", 
@@ -1188,20 +1194,47 @@ class bsHelper extends AppHelper {
                  );
     }
     
-    public function table($options = [], $data = []){
+    public function table($options = [], $data = [], $advanced_options = [] ){
         // thead
         $columns = [];
         $thead = $tbody = $tfoot = $table_caption = '';
+        
         $tfoot_data = [];
         if (isset($options['tfoot'])){
             $tfoot_data = $options['tfoot'];
             unset($options['tfoot']);
         }
         
+        if (empty($advanced_options['mode'])){
+            /*
+             * html - full table with html and rendered values cells
+             * tr  - only one first row without headers/footer with <tr>..</tr>
+             * table - html structure only text data for exporting,
+             */
+            $advanced_options['mode'] = 'html';
+        }
+        $csv = [];
+        if ($advanced_options['mode'] == 'csv'){
+            $advanced_options['csv_divider'] =
+              isset($advanced_options['csv_divider'])
+                    ? $advanced_options['csv_divider']
+                    : "\t";
+            $advanced_options['csv_line_end'] =
+              isset($advanced_options['csv_line_end'])
+                    ? $advanced_options['csv_line_end']
+                    : "\n";
+        }
+        
+        if (!array_key_exists('boolean_icon', $advanced_options)){
+            $advanced_options['boolean_icon'] = 
+                    $this->components["table"]["icons"]["boolean"];
+        }
+        
         $first_datum = [];
         if ($data && !empty($data[0])){
             $first_datum = $data[0];
         }
+        
         
         $modelName = empty($options['modelName']) ? null : $options['modelName'];
         
@@ -1216,6 +1249,7 @@ class bsHelper extends AppHelper {
 
         
         $thead_tr = '';
+        $csv_row = [];
         foreach ($options['fields'] as $one => $two){
             $column = [];
             if (is_int( $one) && is_string($two)){
@@ -1295,6 +1329,9 @@ class bsHelper extends AppHelper {
                         $th_options = $this->addClass($th_options, "text-right");
 
                         break;
+                    case "boolean":
+                        $th_options = $this->addClass($th_options, "text-center");
+                        break;
 
                     default:
                         break;
@@ -1312,22 +1349,53 @@ class bsHelper extends AppHelper {
             $th_options['data-type'] = $column['type'];
             
             if ( !$column['hide'] && !empty($column['header']) ){
+                
+                if ($advanced_options['mode'] == "table"){
+                    $th_options = [];
+                    $column['header'] = strip_tags($column['header']);
+                }
+                
+                if ($advanced_options['mode'] == "csv"){
+                    //$th_options = [];
+                    $csv_row[] = strip_tags($column['header']);
+                    //continue;
+                }
+                
                 $thead_tr .= $this->tag('th', $column['header'], $th_options);
             }
                     
             $columns[] = $column;
         }
+        
+        if ($advanced_options['mode'] == 'csv'){
+            $csv[] = join($advanced_options['csv_divider'], $csv_row);
+        }
         $thead = $this->tag('tr', $thead_tr);
+        
+        
+        
         unset($options['fields']);
         
-        debug(compact('columns'));
+        if ($advanced_options['mode'] == 'config'){
+            return compact(
+                    'modelName',
+                    'primaryKey',
+                    'primaryKeyInfo',
+                    'columns', 
+                    'options', 
+                    'advanced_options'
+                    
+                    );
+        }
+        
+        //debug(compact('columns'));
 
         // tbody
         
         foreach ($data as $datum){
             $tr = '';
             $tr_options = [];
-            
+            $csv_row    = [];
             if (isset($datum['__tr'])){
                 $tr_options = $datum['__tr'];
             }
@@ -1381,8 +1449,22 @@ class bsHelper extends AppHelper {
                        $td_options = $this->addClass($td_options, "text-right");
 
                        break;
-                   case "boolean":
-                       $td_value = $value ? "true" : "false";
+                   case "boolean":                       
+                       $td_options = $this->addClass($td_options, "text-center");
+                       $td_value = $value ? "TRUE" : "FALSE";
+                       if ( 
+                               $advanced_options['mode'] == "html"
+                               || $advanced_options['mode'] == "tr"                               
+                               ){
+                            
+                            if ( $advanced_options['boolean_icon'] ){
+                                
+                                $td_value = $value 
+                                        ? $this->icon($advanced_options['boolean_icon']["true"])
+                                        : $this->icon($advanced_options['boolean_icon']["false"]);
+                            }
+                       }
+
                        break;
 
                    default:
@@ -1391,11 +1473,42 @@ class bsHelper extends AppHelper {
                
                          
                if (!$column['hide']){
-                    $tr .= $this->tag("td", $predefined_td_content ? : $td_value, $td_options);
+                   
+                   $td_render_value = $predefined_td_content ? : $td_value;
+                   
+                   if ($advanced_options['mode'] == "table"){
+                       $td_options = [];
+                       $td_render_value = strip_tags($td_render_value);
+                   }
+                   
+                   if ($advanced_options['mode'] == "csv"){
+                       $td_options = [];
+                       $td_render_value = strip_tags($td_render_value);
+                       $csv_row[] = $td_render_value;
+                       continue;
+                   }
+                   $tr .= $this->tag("td", $td_render_value, $td_options);
                }
             }
             
+            //one row returns, first datum!!!!
+            if ( $advanced_options['mode'] == 'tr' ){
+                return $this->tag('tr', $tr, $tr_options);
+            }
+            
+            if ($advanced_options['mode'] == "table"){
+                $tr_options = [];
+            }
+            
+            if ($advanced_options['mode'] == "csv"){
+                $csv[] = join($advanced_options['csv_divider'], $csv_row);
+            }
+            
             $tbody .= $this->tag('tr', $tr, $tr_options);
+        }
+        
+        if ($advanced_options['mode'] == "csv"){
+            return join($advanced_options['csv_line_end'], $csv);
         }
         
         // tfoot
@@ -1430,16 +1543,36 @@ class bsHelper extends AppHelper {
                     
                 }
                 if (!$column['hide']){
+                    if ($advanced_options['mode'] == "table"){
+                            $tfoot_options = [];
+                            $tfoot_value = strip_tags($tfoot_value);
+                        }
+                    
+                    
                     $tfoot_tr .= $this->tag('td', $tfoot_value, $tfoot_options);
                 }
             }
+            
+                        //one row returns, first datum!!!!
+            if ( $advanced_options['mode'] == 'tfoot' ){
+                return $this->tag('tr', $tfoot_tr, $tfoot_tr_options);
+            }   
+            
+            if ($advanced_options['mode'] == "table"){
+                    $tfoot_tr_options = [];
+                }
+            
             $tfoot .= $this->tag('tr', $tfoot_tr, $tfoot_tr_options);
         }
         
         $table_options = $options;
         
         $table_options = $this->addClass($table_options, 'table');
-        $table_options = $this->addClass($table_options, 'table-bordered');
+        //$table_options = $this->addClass($table_options, 'table-bordered');
+        
+        if ($advanced_options['mode'] == "table"){
+            $table_options = [];
+        }
         
         return $this->tag("table", [
             $thead ? $this->tag("thead", $thead, []) : null,
