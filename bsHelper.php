@@ -46,7 +46,7 @@ class bsHelper extends AppHelper {
                 "require" => ["default", "primary", "success", "info", "warning", "danger", "link"],
                 "default" => "default"
                 ],
-            "classes" => ["active", "disabled", "navbar-btn"],
+            "classes" => ["active", "disabled", "navbar-btn", "pull-right"],
             "tags" => [
                 "list"    => ["button", "a", "input"],
                 "default" => "button"
@@ -391,111 +391,126 @@ class bsHelper extends AppHelper {
                 }
                 
                 if (isset($options['collapse']) && is_array( $options['collapse'] )){
-                    foreach ( $options['collapse'] as $elem ){
-                        switch ($elem['type']) {
-                            case 'text':
-                                $content = $elem["content"];
-                                unset($elem['content']);
-                                
-                                $elem = $this->addClass($elem, "navbar-text");
-                                
-                                $navbar_collapse .= $this->tag("p", $content, $elem);
-                                break;
-                            
-                            case 'button':
-                                $navbar_collapse .= $this->btn( array_merge($elem, ["navbar-btn"]));
-                                break;
-                            
-                            case 'nav':
-                                $nav_content = '';
-                                foreach ($elem['items'] as $item_arg0 => $item_arg1){
-                                    
-                                    $active = $disabled = false;
-                                    
-                                    if (is_string($item_arg1)){
-                                        $item_arg1 = [
-                                            'href' => $item_arg1];
-                                    }
-                                    
-                                    if ( is_array($item_arg1 )){
-                                        $active = in_array("active", $item_arg1);
-                                        $disabled = in_array("disabled", $item_arg1);
-                                    }
-                                    
-                                    if ( !empty($item_arg1['children']) ){
-                                        //dropdown
-                                        $item_children_content = '';
-                                        foreach ( $item_arg1['children'] as $child_arg1 => $child_arg2 ){
-                                            
-                                            if ($child_arg2 == '-'){
-                                               $item_children_content .= $this->li('', [
-                                                   'role' => 'separator',
-                                                   'class' => 'divider'
-                                               ]);
-                                            } else {     
-                                                $child_disabled = false;
-                                                if (is_array($child_arg2)){
-                                                    $child_disabled = in_array('disabled', $child_arg2);
-                                                }
-                                                
-                                                if (is_string($child_arg2)){
-                                                    $child_arg2 = [
-                                                        'href' => $child_arg2];
-                                                }
-                                                
-                                                $item_children_content .= $this->li( $this->a(
-                                                        $child_arg1, 
-                                                        $child_arg2), [
-                                                    "class" =>
-                                                        $child_disabled ? 'disabled' : null,
-                                                    ]);
-                                                 
-                                            }
+                    foreach ( $options['collapse'] as $ix => $elem ){
+                        
+                        if (is_int($ix) && is_string($elem)) {
+                            //Custom string code
+                            $navbar_collapse .= $elem;
+                            continue;
+                        }
+                        
+                        if (is_int($ix) && is_array($elem)) {
+                            switch ($elem['type']) {
+                                case 'text':
+                                    $content = $elem["content"];
+                                    unset($elem['content']);
+
+                                    $elem = $this->addClass($elem, "navbar-text");
+
+                                    $navbar_collapse .= $this->tag("p", $content, $elem);
+                                    break;
+
+                                case 'button':
+                                    $navbar_collapse .= $this->btn( array_merge($elem, ["navbar-btn"]));
+                                    break;
+
+                                case 'nav':
+                                    $nav_content = '';
+                                    foreach ($elem['items'] as $item_arg0 => $item_arg1){
+
+                                        $active = $disabled = false;
+
+                                        //custom html code
+                                        if (is_int($item_arg0) && is_string($item_arg1)){
+                                            $nav_content .= $item_arg1;
+                                            continue; //next item
                                         }
-                                        $nav_content .= $this->li([
-                                            $this->a(  $item_arg0 .' <span class="caret">', [
-                                                'href' =>"#" ,
-                                                'class' => 'dropdown-toggle',
-                                                'data-toggle'=>"dropdown" ,
-                                                'role'=>"button" ,
-                                                'aria-haspopup' => "true",
-                                            ]),
-                                            $this->ul( $item_children_content, [
-                                                "class" => 'dropdown-menu'
-                                            ] )
-                                        ], [
-                                            'class' => [
-                                                'dropdown',
-                                                $disabled ? 'disabled' : null,
-                                                $active ? 'active' : null,
-                                                ]
-                                        ]);
-                                        
-                                    } else {
-                                        $nav_content .= $this->li( $this->a(
-                                            $item_arg0, $item_arg1),
-                                                [
-                                                    //li options
-                                                    'class' => [
-                                                        $disabled ? 'disabled' : null,
-                                                        $active ? 'active' : null,
+
+                                        if (is_string($item_arg1)){
+                                            $item_arg1 = [
+                                                'href' => $item_arg1];
+                                        }
+
+                                        if ( is_array($item_arg1 )){
+                                            $active = in_array("active", $item_arg1);
+                                            $disabled = in_array("disabled", $item_arg1);
+                                        }
+
+                                        if ( !empty($item_arg1['children']) ){
+                                            //dropdown
+                                            $item_children_content = '';
+                                            foreach ( $item_arg1['children'] as $child_arg1 => $child_arg2 ){
+
+                                                if ($child_arg2 == '-'){
+                                                   $item_children_content .= $this->li('', [
+                                                       'role' => 'separator',
+                                                       'class' => 'divider'
+                                                   ]);
+                                                } else {     
+                                                    $child_disabled = false;
+                                                    if (is_array($child_arg2)){
+                                                        $child_disabled = in_array('disabled', $child_arg2);
+                                                    }
+
+                                                    if (is_string($child_arg2)){
+                                                        $child_arg2 = [
+                                                            'href' => $child_arg2];
+                                                    }
+
+                                                    $item_children_content .= $this->li( $this->a(
+                                                            $child_arg1, 
+                                                            $child_arg2), [
+                                                        "class" =>
+                                                            $child_disabled ? 'disabled' : null,
+                                                        ]);
+
+                                                }
+                                            }
+                                            $nav_content .= $this->li([
+                                                $this->a(  $item_arg0 .' <span class="caret">', [
+                                                    'href' =>"#" ,
+                                                    'class' => 'dropdown-toggle',
+                                                    'data-toggle'=>"dropdown" ,
+                                                    'role'=>"button" ,
+                                                    'aria-haspopup' => "true",
+                                                ]),
+                                                $this->ul( $item_children_content, [
+                                                    "class" => 'dropdown-menu'
+                                                ] )
+                                            ], [
+                                                'class' => [
+                                                    'dropdown',
+                                                    $disabled ? 'disabled' : null,
+                                                    $active ? 'active' : null,
                                                     ]
-                                                ]);
+                                            ]);
+
+                                        } else {
+                                            $nav_content .= $this->li( $this->a(
+                                                $item_arg0, $item_arg1),
+                                                    [
+                                                        //li options
+                                                        'class' => [
+                                                            $disabled ? 'disabled' : null,
+                                                            $active ? 'active' : null,
+                                                        ]
+                                                    ]);
+                                        }
                                     }
-                                }
-                                
-                                $navbar_collapse .= $this->ul($nav_content, [
-                                    'class' => [
-                                        'nav', 
-                                        'navbar-nav',
-                                        in_array('right', $elem) ? 'navbar-right' : null
-                                        ]
-                                ] );
 
-                                break;
+                                    $navbar_collapse .= $this->ul($nav_content, [
+                                        'class' => [
+                                            'nav', 
+                                            'navbar-nav',
+                                            in_array('right', $elem) ? 'navbar-right' : null
+                                            ]
+                                    ] );
 
-                            default:
-                                break;
+                                    break;
+
+                                default:
+                                    break;
+                              }
                         }
                     }
                     
@@ -573,6 +588,18 @@ class bsHelper extends AppHelper {
         return $this->tag('div', $content, $options);
     }
     
+    public function dl($array = [], $options = []){
+        $content =  '';
+        foreach ($array as $dt => $dd){
+            $content .= $this->tag('dt', $dt) . $this->tag('dd', $dd);
+        }        
+        return $this->tag('dl', $content);
+    }
+    public function dl_horizontal($array = [], $options = []){        
+        $options = $this->addClass($options, 'dl-horizontal');
+        return $this->dl($array, $options);
+    }
+    
     public function span($content = null, $options = []){
         return $this->tag('span', $content, $options);
     }
@@ -609,6 +636,10 @@ class bsHelper extends AppHelper {
         }
         $options[$key] = array_merge($options[$key], $classes);
         return $options;
+    }
+    
+    public function strong($content){
+        return $this->tag('strong', $content);
     }
     
     /**
@@ -914,8 +945,9 @@ class bsHelper extends AppHelper {
     
     public function loadModel($modelName){
         if (empty($this->schema[$modelName] )){
+            
             $this->$modelName = ClassRegistry::init($modelName);
-            $this->schema[$modelName] = $this->$modelName->_schema;
+            $this->schema[$modelName] = $this->$modelName->schema();
         }
         
         if (empty($this->schema[$modelName] )){
@@ -1241,7 +1273,12 @@ class bsHelper extends AppHelper {
         $primaryKey = empty($options['primaryKey']) ? null : $options['primaryKey'];
         
         if (!$primaryKey){
-            $primaryKeyInfo = $this->primaryKey($modelName);
+            $primaryKeyName = $this->primaryKey($modelName);
+            
+            if ($primaryKeyName){
+                $primaryKeyInfo = $this->fieldInfo($modelName . "." . $primaryKeyName);
+            }
+            
             if ($primaryKeyInfo){
                 $primaryKey = $primaryKeyInfo['model'] . '.' . $primaryKeyInfo["name"];
             }
@@ -1307,6 +1344,8 @@ class bsHelper extends AppHelper {
                 if ( !empty( $column['fullFieldName'] ) ){
                     $column['dbinfo'] = $this->fieldInfo($column['fullFieldName']);
                     $column['header'] = 
+                        array_key_exists("dbinfo", $column) &&
+                            is_array($column['dbinfo']) &&
                         array_key_exists("comment", $column['dbinfo']) &&
                             !empty( $column['dbinfo']["comment"] )
                             ? $column['dbinfo']["comment"]
