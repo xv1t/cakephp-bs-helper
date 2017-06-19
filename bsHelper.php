@@ -422,7 +422,7 @@ class bsHelper extends AppHelper {
 
                                         //custom html code
                                         if (is_int($item_arg0) && is_string($item_arg1)){
-                                            $nav_content .= $item_arg1;
+                                            $nav_content .= $this->tag('li',  $item_arg1);
                                             continue; //next item
                                         }
 
@@ -1057,9 +1057,8 @@ class bsHelper extends AppHelper {
                 unset($options[$key]);
             }
         }
-                
-        $form_html = $this->Form->create($modelName, $options);   
-        
+   
+             
         if ($header){
             if (!$this->str_with_tags($header)){
                 $form_html .= $this->tag('h2', $header);
@@ -1069,30 +1068,33 @@ class bsHelper extends AppHelper {
             
         }
         
-        //hidden, key fields        
-       /*
-         * find primary kye
-         */
-        $primaryKey = $this->primaryKey($modelName);
-        $form_html .= $this->Form->hidden($primaryKey);
+        
         
         //simple `fields` set
         if (empty($options['fieldset']) && !empty($options['fields'])){
             
             $fieldsets = [
-                'fields' => $options['fields']
+                [ 'fields' => $options['fields'] ]
             ];
             
             unset($options['fields']);
         }
         
+        $form_html = $this->Form->create($modelName, $options);   
+        //hidden, key fields        
+        /*
+         * find primary kye
+         */
+        $primaryKey = $this->primaryKey($modelName);
+        $form_html .= $this->Form->hidden($primaryKey);
+                
         //fieldsets
         foreach ($fieldsets as $fieldset){
             $fieldset_html = '';
             if (!empty($fieldset['legend'])){
                 $fieldset_html .= $this->tag('legend', $fieldset['legend']);
             }
-            
+
             if (!empty($fieldset['fields'])){
                 //make row
                 $row = [];
@@ -1118,6 +1120,7 @@ class bsHelper extends AppHelper {
                         $row[] = $this->input($one, $two);
                     }
                 }
+                
                 $fieldset_html .= $this->row($row, $row_options);
             }
             
@@ -1156,13 +1159,18 @@ class bsHelper extends AppHelper {
         if ($field['comment']){
             $options['label'] = $field['comment'];
         }
+        
         $options['div'] = [
             'class' => "form-group"
         ];
         
-        
-        
         $options = $this->addClass($options, "form-control");
+        
+        //required value
+        if (isset($field['null']) && $field['null'] === false){
+            $options[] = 'required';
+        }
+        
         
         if ($field['type'] == 'boolean'){
             $fieldLabel = $field['comment'];
@@ -1466,6 +1474,8 @@ class bsHelper extends AppHelper {
                            unset( $predefined_td['content'] );
                            $td_options = $predefined_td;
                            //$predefined_td
+                       } else {
+                           $td_options = $predefined_td;
                        }
                    }
                }
@@ -1548,6 +1558,12 @@ class bsHelper extends AppHelper {
         
         if ($advanced_options['mode'] == "csv"){
             return join($advanced_options['csv_line_end'], $csv);
+        }
+        
+        //table caption
+        if (isset( $options['caption'] )){
+            $table_caption = $options['caption'];
+            unset( $options['caption']  );
         }
         
         // tfoot
