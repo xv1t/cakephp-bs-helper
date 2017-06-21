@@ -1245,6 +1245,19 @@ class bsHelper extends AppHelper {
             unset($options['tfoot']);
         }
         
+        $indicator = null;
+        
+        if (isset($options['indicator'])){
+            $indicator = $options['indicator'];
+            unset($options['indicator']);
+            if (!is_array($indicator)){
+                $indicator = [];
+            }
+
+            
+            $indicator = $this->addClass($indicator, 'indicator');
+        }
+                
         if (empty($advanced_options['mode'])){
             /*
              * html - full table with html and rendered values cells
@@ -1253,6 +1266,11 @@ class bsHelper extends AppHelper {
              */
             $advanced_options['mode'] = 'html';
         }
+        
+        if (!in_array($advanced_options['mode'], ['html', 'tr'])){
+            $indicator = null;
+        }
+        
         $csv = [];
         if ($advanced_options['mode'] == 'csv'){
             $advanced_options['csv_divider'] =
@@ -1294,6 +1312,11 @@ class bsHelper extends AppHelper {
 
         
         $thead_tr = '';
+        
+        if (!empty($indicator)){
+            $thead_tr .= $this->tag('th', '', $indicator);
+        }
+        
         $csv_row = [];
         foreach ($options['fields'] as $one => $two){
             $column = [];
@@ -1438,9 +1461,14 @@ class bsHelper extends AppHelper {
         //debug(compact('columns'));
 
         // tbody
-        
+     
         foreach ($data as $datum){
             $tr = '';
+            
+            if (!empty($indicator)){
+                $tr .= $this->tag('td', '', $indicator);
+            }
+        
             $tr_options = [];
             $csv_row    = [];
             if (isset($datum['__tr'])){
@@ -1569,6 +1597,11 @@ class bsHelper extends AppHelper {
         // tfoot
         if ($tfoot_data){
             $tfoot_tr = '';
+            
+            if (!empty($indicator)){
+                $tfoot_tr .= $this->tag('td', '', $indicator);
+            }
+            
             $tfoot_tr_options = [];
             
             if (!empty($tfoot_data['options'])){
