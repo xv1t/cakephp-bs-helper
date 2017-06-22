@@ -1,16 +1,12 @@
 <?php
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Description of bsHelper
+ *
+ * @author xv1t
  */
 
-/**
- * Description of Bs3Helper
- *
- * @author vt
- */
+App::uses('Helper', 'View');
 
 class bsHelper extends AppHelper {
     var $helpers = array(
@@ -517,6 +513,22 @@ class bsHelper extends AppHelper {
                     unset($options['collapse']);
                 }
                 
+                //Change global body options to for main layout
+                $bodyOptions = $this->_View->getVar('bodyOptions');
+                if (empty($bodyOptions)){
+                    $bodyOptions = ["class" => []];
+                }
+                
+                if ( $this->hasClass($options, 'navbar-fixed-top') ){
+                    $bodyOptions = $this->addClass($bodyOptions, 'body-navbar-fixed-top');
+                }
+                
+                if ( $this->hasClass($options, 'navbar-fixed-bottom') ){
+                    $bodyOptions = $this->addClass($bodyOptions, 'body-navbar-fixed-bottom');
+                }
+                
+                $this->_View->set(compact('bodyOptions'));
+                
                 $content = $this->div([
                     $this->div([
                         $navbar_toggle,
@@ -611,6 +623,20 @@ class bsHelper extends AppHelper {
             $content = join($content);
         }
         
+        if (isset($options['data']) && is_array($options['data']) ){
+            foreach ($options['data'] as $key => $value){
+                $options[ 'data-' . $key ] = $value;
+            }
+            unset($options['data']);
+        }
+        
+        if (isset($options['aria']) && is_array($options['aria']) ){
+            foreach ($options['aria'] as $key => $value){
+                $options[ 'aria-' . $key ] = $value;
+            }
+            unset($options['aria']);
+        }
+        
         
         return $this->Html->tag($tagName, $content, $options);
     }
@@ -619,6 +645,28 @@ class bsHelper extends AppHelper {
         return $this->el("btn-toolbar", $options, $content);
         //$options = $this->addClass($options, "btn-toolbar") ;  
         //return $this->tag("div", $content, $options);
+    }
+    
+    public function hasClass($options, $className){
+        if (is_array($options) && empty($options['class'])){
+            return false;
+        }
+        
+        $classes_string = '';
+        
+        if (is_string($options)){
+            $classes_string = $options;
+        }        
+        
+        if (is_array($options['class']) ){
+            $classes_string = ' ' . join(' ', $options['class']) . ' ';
+        }
+        
+        if (is_string($options['class'])){
+            $classes_string = ' ' . $options['class'] . ' ';
+        }
+        
+        return strpos($classes_string, $className) !== false;
     }
     
     public function addClass($options = [], $classes = null, $key = 'class'){
