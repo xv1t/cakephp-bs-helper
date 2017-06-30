@@ -1721,4 +1721,101 @@ class bsHelper extends AppHelper {
     public function navbar($options = []){
         return $this->el("navbar", $options);
     }
+    
+    public function navtabs($tabs = [], $options = []){
+        $ix = 0;
+        if (empty($options['active_tab'])){
+            $options['active_tab'] = 0;
+        }
+        $ul_options = [
+            'class' => [
+                'nav',
+                'nav-tabs'
+            ],
+            'role' => 'tablist'
+        ];
+        $ul_html = $tab_content_html = '';
+        
+        foreach ($tabs as $one => $two){
+            $tab_header = $tab_content = '';
+            $tab_options = $a_options = $li_options = [];
+            
+            if (is_string($one)){
+                $tab_header = $one;
+                if (is_string($two)){
+                    $tab_content = $two;
+                } else {
+                    $tab_options = $two;
+                }
+            } else {
+                $tab_options = $two;
+            }
+            
+            if (isset($tab_options['content'])){
+                $tab_content = $tab_options['content'];
+                unset( $tab_options['content'] );
+            }
+            
+            if (isset($tab_options['header'])){
+                $tab_header = $tab_options['header'];
+                unset( $tab_options['header'] );
+            }
+            
+            if (isset($tab_options['li']) && is_array( $tab_options['li'] )){
+                $li_options = $tab_options['li'];
+                unset($tab_options['li']);
+            }
+            
+            if (isset($tab_options['a']) && is_array( $tab_options['a'] )){
+                $a_options = $tab_options['a'];
+                unset($tab_options['a']);
+            }
+            
+            if ( $ix == $options['active_tab']){
+                $tab_options = $this->addClass($tab_options, 'active');
+                $li_options = $this->addClass($li_options, 'active');
+            }
+            
+            $tab_options = $this->addClass($tab_options, 'tab-pane');
+            
+            $tab_options += [
+                'id' => empty($tab_options['id']) ?  uniqid() : $tab_options['id'] ,
+                'role' => 'tabpanel'                
+                ];
+            
+            
+            $a_options += [
+                'href' => '#' . $tab_options['id'],
+                'aria' => [
+                    'controls' => $tab_options['id']
+                ],
+                'role' => 'tab',
+                'data' => [
+                    'toggle' => 'tab'
+                ]
+            ];
+            
+            $li_options += [
+                'role' => 'presentation'
+            ];
+            
+            $ul_html .= $this->li($this->a($tab_header, $a_options), $li_options);
+            $tab_content_html .= $this->div($tab_content, $tab_options);
+                        
+            $ix++;
+        }
+        
+        $options = $this->addClass($options, 'tab-content');
+        $element_options = [];
+        
+        if (isset($options['options']) && is_array($options['options']) ){
+            $element_options = $options['options'];
+        }
+        $element_options = $this->addClass($element_options, 'navtabs');
+        
+        return $this->div( [
+            $this->ul($ul_html, $ul_options),
+            $this->div($tab_content_html, $options),
+            ], $element_options);
+    }
 }
