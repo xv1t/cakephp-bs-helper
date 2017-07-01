@@ -1722,20 +1722,32 @@ class bsHelper extends AppHelper {
         return $this->el("navbar", $options);
     }
     
-    public function navtabs($tabs = [], $options = []){
-        $ix = 0;
-        if (empty($options['active_tab'])){
-            $options['active_tab'] = 0;
+    private function extract_options($options, $key){
+        $other_options = [];
+        if (isset($options[$key])){
+            $other_options = $options[$key];
+            unset($options[$key]);
         }
-        $ul_options = [
-            'class' => [
-                'nav',
-                'nav-tabs'
-            ],
-            'role' => 'tablist'
-        ];
-        $ul_html = $tab_content_html = '';
+        return [$options, $other_options];
+    }
+    
+    public function navtabs($tabs = [], $options = []){
         
+        if (empty($options['active_index'])){
+            $options['active_index'] = 0;
+        }
+        
+        //initialize options for elements
+        list($options, $nav_options) = $this->extract_options($options, 'nav');        
+        $nav_options += [ 'role' => 'tablist' ];        
+        $nav_options = $this->addClass($nav_options, ['nav', 'nav-tabs']);
+        
+        list($options, $content_options) = $this->extract_options($options, 'content');
+        $content_options = $this->addClass($content_options, ['tab-content']);
+        
+        
+        $nav_html = $content_html = '';
+        $ix = 0;
         foreach ($tabs as $one => $two){
             $tab_header = $tab_content = '';
             $tab_options = $a_options = $li_options = [];
@@ -1770,10 +1782,14 @@ class bsHelper extends AppHelper {
                 $a_options = $tab_options['a'];
                 unset($tab_options['a']);
             }
+
+            $active = isset($options['active_tab']) 
+                    ? $tab_header == $options['active_tab'] 
+                    : $ix == $options['active_index'] ;
             
-            if ( $ix == $options['active_tab']){
+            if ($active){
                 $tab_options = $this->addClass($tab_options, 'active');
-                $li_options = $this->addClass($li_options, 'active');
+                $li_options  = $this->addClass($li_options, 'active');
             }
             
             $tab_options = $this->addClass($tab_options, 'tab-pane');
@@ -1799,23 +1815,17 @@ class bsHelper extends AppHelper {
                 'role' => 'presentation'
             ];
             
-            $ul_html .= $this->li($this->a($tab_header, $a_options), $li_options);
-            $tab_content_html .= $this->div($tab_content, $tab_options);
+            $nav_html .= $this->li($this->a($tab_header, $a_options), $li_options);
+            $content_html .= $this->div($tab_content, $tab_options);
                         
             $ix++;
         }
         
-        $options = $this->addClass($options, 'tab-content');
-        $element_options = [];
-        
-        if (isset($options['options']) && is_array($options['options']) ){
-            $element_options = $options['options'];
-        }
-        $element_options = $this->addClass($element_options, 'navtabs');
+        $options = $this->addClass($options, 'navtabs');
         
         return $this->div( [
-            $this->ul($ul_html, $ul_options),
-            $this->div($tab_content_html, $options),
-            ], $element_options);
+            $this->ul($nav_html, $nav_options),
+            $this->div($content_html, $content_options),
+            ], $options);
     }
 }
