@@ -616,6 +616,109 @@ class bsHelper extends AppHelper {
         return $this->tag('span', $content, $options);
     }
     
+    public function caret(){
+        return $this->tag('span', '', [
+            'class' => 'caret'
+        ]);
+    }
+    
+    public function btn_dropup(string $title, array $items = [], array $options = []){
+        $options['dropup'] = true;
+        return $this->btn_dropdown($title, $items, $options);
+    }
+    
+    public function btn_dropdown(string $title, array $items = [], array $options = []){
+        $btn_html = $items_html = $split_btn_html = '';
+        list($options, $btn_options) = $this->extract_options($options, 'btn');
+        list($options, $ul_options) = $this->extract_options($options, 'ul');
+        
+        if (empty($options['tagName'])){
+            $options['tagName'] = 'div';
+        }
+        
+        
+        if (empty($btn_options['id'])){
+            $btn_options['id'] = uniqid();
+        }
+        
+        $ul_options = $this->addClass($ul_options, 'dropdown-menu');
+        $ul_options['aria-labelledby'] = $btn_options['id'];
+        
+        if (isset($options['dropup']) && $options['dropup'] === true){
+            $options = $this->addClass($options, 'dropup');
+        } else {
+            $options = $this->addClass($options, 'dropdown');
+        }
+        
+        foreach ($items as $one => $two){
+            $item_options = $li_options = [];
+            
+            if (is_array($two)){
+                $item_options = $two;
+            }
+            
+            if (is_string($one)){
+                $item_options['header'] = $one;
+            }
+            
+            if (is_string($two)){
+                $item_options['href'] = $two;
+            }
+            
+            list( $item_options, $item_header ) =
+                    $this->extract_options($item_options, 'header');
+            
+            list( $item_options, $li_options ) =
+                    $this->extract_options($item_options, 'li');
+            
+            if ($two === '-'){
+                $item_header = '';
+                $li_options['class'] = 'divider';
+                $li_options['role'] = 'separator';
+            }
+            
+            $items_html .= $this->li([
+                $this->a($item_header, $item_options)
+            ], $li_options);
+            
+        }
+        
+        list($options, $split) = $this->extract_options($options, 'split');
+        
+        if ($split === true){
+            $options = $this->addClass($options, 'btn-group');
+            
+            $caret_btn_options = [
+                    'data-toggle'=>"dropdown",
+                    'aria-haspopup' => 'true',
+                    'aria-expanded' => 'false',
+                    'class' => empty( $btn_options['class']) ? [] : $btn_options['class']
+                ];
+            
+            $caret_btn_options = $this->addClass($caret_btn_options, 'dropdown-toggle');
+            
+            return $this->tag($options['tagName'], [
+                $this->btn($btn_options, $title),
+                $this->btn($caret_btn_options,
+                    $this->caret() . "\n" . $this->span('Toggle Dropdown', [
+                        'class' => 'sr-only'
+                    ])),
+                $this->ul($items_html, $ul_options)
+            ], $options);
+            
+        } else {      
+            $btn_options['data-toggle']="dropdown";
+            $btn_options['aria']['haspopup'] = 'true';
+            $btn_options['aria']['expanded'] = 'false';            
+            
+            return $this->tag($options['tagName'], [
+                $this->btn($btn_options, $title . "\n" . $this->caret()),
+                $this->ul($items_html, $ul_options)
+            ], $options);
+        }
+        
+    }
+    
     public function tag($tagName, $content = null, $options = []){
         $options['escape'] = false;
         
@@ -625,6 +728,7 @@ class bsHelper extends AppHelper {
         
         if (isset($options['data']) && is_array($options['data']) ){
             foreach ($options['data'] as $key => $value){
+                if (empty($options[ 'data-' . $key  ]))
                 $options[ 'data-' . $key ] = $value;
             }
             unset($options['data']);
@@ -632,6 +736,7 @@ class bsHelper extends AppHelper {
         
         if (isset($options['aria']) && is_array($options['aria']) ){
             foreach ($options['aria'] as $key => $value){
+                if (empty('aria-' . $key))
                 $options[ 'aria-' . $key ] = $value;
             }
             unset($options['aria']);
@@ -667,6 +772,67 @@ class bsHelper extends AppHelper {
         }
         
         return strpos($classes_string, $className) !== false;
+    }
+    
+    public function removeClass($options = [], $classes = null, $key = 'class'){
+        if (empty($options[ $key ])){
+            return $options;
+        }
+        
+        if (empty($classes)){
+            return $options;
+        }
+        
+        if (is_string($classes)){
+            $classes = $this->array_classes(['class' => $classes]);
+        }
+        
+        if (empty($classes)){
+            return $options;
+        }
+        
+        $options_classess = $this->array_classes($options);
+        
+        foreach ($classes as $class){
+            $pos = array_search($class, $options_classess);
+            if ($pos !== false){
+                unset($options_classess[$pos]);
+            }
+        }
+        $options['class'] = join(' ', $options_classess);
+        return $options;
+        
+    }
+    
+    private function array_classes(array $options = []){
+        $classes = [];
+        if (empty($options['class'])){
+            return $classes;
+        }
+        
+        $classes_string = '';
+        
+        if (is_array($options['class'])){
+            $classes_string = join(' ', $options['class']);
+        }
+                
+        
+        if (is_string($options['class'])){
+            $classes_string = $options['class'];
+        }    
+        
+        if (!$classes_string){
+            return $classes;
+        }
+        
+        $parse1 = explode(' ', $classes_string);
+        foreach ($parse1 as $word){
+            if ($word){
+                $classes[] = $word;
+            }
+        }
+        
+        return $classes;
     }
     
     public function addClass($options = [], $classes = null, $key = 'class'){
@@ -1815,8 +1981,60 @@ class bsHelper extends AppHelper {
                 'role' => 'presentation'
             ];
             
-            $nav_html .= $this->li($this->a($tab_header, $a_options), $li_options);
-            $content_html .= $this->div($tab_content, $tab_options);
+            if (empty($tab_options['dropdown'])){            
+                $nav_html .= $this->li($this->a($tab_header, $a_options), $li_options);
+                $content_html .= $this->div($tab_content, $tab_options);
+            } else {
+                /*
+                 * enumerate items
+                 */
+                
+                $li_options = $this->addClass($li_options, 'dropdown');
+                $a_options = $this->addClass($a_options, 'dropdown-toggle');
+                
+                $a_options['id'] = uniqid();
+                $a_options['data-toggle'] = 'dropdown';
+                $a_options['aria-controls'] = uniqid();
+                $a_options['aria-expanded'] = 'false';
+                unset($a_options['role']);
+                
+                $dropdown_ul_content = '';
+                
+                foreach ($tab_options['items'] as $item_title => $item_content){
+                    
+                    $item_a_options = [
+                        'id' => uniqid(),
+                        'data-toggle' => 'tab',
+                        'role' => 'tab',
+                        'aria-controls' => uniqid(),
+                        'aria-expanded' => 'false'
+                    ];
+                    
+                    $item_a_options['href'] = '#' . $item_a_options['aria-controls'];
+                    
+                    $item_pane_options = [
+                        'class' => 'tab-pane',
+                        'id' => $item_a_options['aria-controls'],
+                        'role' => 'tabpanel',
+                        'aria-labelledby' => $item_a_options['id']
+                    ];                    
+                    
+                    $dropdown_ul_content .= $this->li($this->a($item_title, $item_a_options));
+                    $content_html .= $this->div($item_content, $item_pane_options);
+                }
+                
+                
+                
+                $nav_html .= $this->li([
+                        $this->a($tab_header . " "  . $this->caret(), $a_options) ,                        
+                        $this->ul($dropdown_ul_content, [
+                            'id' => $a_options['aria-controls'],
+                            'aria-labelledby' => $a_options['id'],
+                            'class' => 'dropdown-menu'
+                        ]) 
+                    ], $li_options);
+                
+            }
                         
             $ix++;
         }
