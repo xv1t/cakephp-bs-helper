@@ -1262,6 +1262,17 @@ class bsHelper extends AppHelper {
         foreach ($bars as $bar) {
             $bar_value = array_shift($bar);
             $bar['style'] = "width: $bar_value%";
+            $bar['role'] = 'progressbar';            
+            $bar['aria-valuenow'] = $bar_value;
+            
+            if (!isset($bar['aria-valuemin']))
+            {
+                $bar['aria-valuemin'] = 0;            
+            }
+            
+            if (!isset($bar['aria-valuemax'])){
+                $bar['aria-valuemax'] = 100;
+            }
             
             $bar_content = $this->span("$bar_value%", [
                 'class' => 'sr-only'
