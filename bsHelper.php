@@ -124,7 +124,18 @@ class bsHelper extends AppHelper {
                 ]
             ]
         ],
-        "progress-bar", 
+        "progress-bar" => [
+            "contextual" => [
+                "list" => ["default", "success", 'info', 'warning', 'danger', "striped"],
+                "require" => ["default"],
+                "default" => "default"
+            ],
+            "classes" => ["active"],
+            "tags" => [
+                "list" => ["div"],
+                "default" => "div"
+            ]
+        ], 
         "list-group-item", 
         "navbar" => [
             "contextual" => [
@@ -1233,6 +1244,48 @@ class bsHelper extends AppHelper {
          */
         
         return false;
+    }
+    
+    public function progressbar($val = 35, array $options = []){
+        $bars = [];
+        
+        $content = '';
+        
+        if (is_integer($val)){
+            $bars[] = [ 35 ];
+        }
+        
+        if (is_array($val)){
+            $bars = $val;
+        }
+        
+        foreach ($bars as $bar) {
+            $bar_value = array_shift($bar);
+            $bar['style'] = "width: $bar_value%";
+            
+            $bar_content = $this->span("$bar_value%", [
+                'class' => 'sr-only'
+            ]);
+            
+            if (!empty($bar['label'])){
+                if (is_bool($bar['label'])){
+                    $bar_content = "$bar_value%";
+                }
+                
+                if (is_string($bar['label'])){
+                    $bar_content = str_replace('{{VALUE}}', $bar_value, $bar['label']);
+                }
+                
+                unset($bar['label']);
+            }
+            
+            $content .= $this->el('progress-bar', $bar, $bar_content);
+            
+        }
+        
+        $options = $this->addClass($options, 'progress');
+        
+        return $this->div($content, $options);
     }
     
     public function primaryKey($modelName){
