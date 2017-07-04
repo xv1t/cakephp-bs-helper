@@ -463,6 +463,10 @@ class bsHelper extends AppHelper {
                                                         $child_arg2 = [
                                                             'href' => $child_arg2];
                                                     }
+                                                    
+                                                    if (!isset($child_arg2['href'])){
+                                                        $child_arg2['href'] = '#';
+                                                    }
 
                                                     $item_children_content .= $this->li( $this->a(
                                                             $child_arg1, 
