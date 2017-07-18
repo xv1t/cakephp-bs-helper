@@ -618,9 +618,12 @@ class bsHelper extends AppHelper {
     public function dl($array = [], $options = []){
         $content =  '';
         foreach ($array as $dt => $dd){
-            $content .= $this->tag('dt', $dt) . $this->tag('dd', $dd);
+            if ($dd)
+            {
+                $content .= $this->tag('dt', $dt) . $this->tag('dd', $dd);            
+            }
         }        
-        return $this->tag('dl', $content);
+        return $this->tag('dl', $content, $options);
     }
     public function dl_horizontal($array = [], $options = []){        
         $options = $this->addClass($options, 'dl-horizontal');
@@ -1316,7 +1319,7 @@ class bsHelper extends AppHelper {
     public function form($modelName, $options = []){
         $this->loadModel($modelName);
           
-        $fieldsets = $btn = $header = [];
+        $fieldsets = $hidden_fields = $btn = $header = [];
         if (array_key_exists('fieldset', $options)){
             $fieldsets = $options['fieldset'];
             unset($options['fieldset']);
@@ -1330,6 +1333,11 @@ class bsHelper extends AppHelper {
         if (array_key_exists('btn', $options)){
             $btn = $options['btn'];
             unset($options['btn']);
+        }
+        
+        if (!empty($options['hidden'])){
+            $hidden_fields = $options['hidden'];
+            unset($options['hidde']);
         }
         
         //contextual
@@ -1369,6 +1377,19 @@ class bsHelper extends AppHelper {
          */
         $primaryKey = $this->primaryKey($modelName);
         $form_html .= $this->Form->hidden($primaryKey);
+        
+        //custom hidden fields
+        if ($hidden_fields){
+            foreach ($hidden_fields as $one => $two){
+                if (is_int($one) && is_string($two)){
+                    $form_html .= $this->Form->hidden($two);
+                }
+                
+                if (is_string($one) && is_array($two)){
+                    $form_html .= $this->Form->hidden($one, $two);
+                }
+            }
+        }
                 
         //fieldsets
         foreach ($fieldsets as $fieldset){
@@ -1438,7 +1459,7 @@ class bsHelper extends AppHelper {
     public function input($fullFieldName, $options = []){
         
         $field = $this->fieldInfo($fullFieldName);
-        if ($field['comment']){
+        if ($field['comment'] && empty($options['label'])){
             $options['label'] = $field['comment'];
         }
         
@@ -1596,7 +1617,21 @@ class bsHelper extends AppHelper {
         $thead_tr = '';
         
         if (!empty($indicator)){
-            $thead_tr .= $this->tag('th', '', $indicator);
+            
+            $indicator_options = [];
+            $indicator_content = '';
+            if (is_string($indicator)){
+                $indicator_content = $indicator;
+            }
+            
+            if (is_array($indicator)){
+                if (isset($indicator['content'])){
+                    $indicator_content = $indicator['content'];
+                    unset($indicator['content']);
+                }
+            }
+            
+            $thead_tr .= $this->tag('th', $indicator_content, $indicator_options);
         }
         
         $csv_row = [];
@@ -1830,6 +1865,14 @@ class bsHelper extends AppHelper {
                        break;
                }
                
+               //belongsTo value
+               if (!empty($column['belongsTo'])){
+                   list($bModelName, $bFieldName) = explode('.', $column['belongsTo']);
+                   if ( isset($datum[$bModelName]) && array_key_exists($bFieldName, $datum[$bModelName])){
+                       $td_value = $datum[$bModelName][$bFieldName];
+                   }
+                   //if (empty($column['']))
+               }
                          
                if (!$column['hide']){
                    
@@ -1947,7 +1990,7 @@ class bsHelper extends AppHelper {
         return $this->tag("table", [
             $thead ? $this->tag("thead", $thead, []) : null,
             $table_caption ? $this->tag('caption', $table_caption, []) : null,
-            $tbody ? $this->tag("tbody", $tbody, []) : null,
+            $this->tag("tbody", $tbody, []),
             $tfoot ? $this->tag("tfoot", $tfoot, []) : null,
         ], $table_options);
     }
@@ -2069,7 +2112,9 @@ class bsHelper extends AppHelper {
                 $dropdown_ul_content = '';
                 
                 foreach ($tab_options['items'] as $item_title => $item_content){
-                    
+                    if ($item_content === false){
+                        continue;
+                    }
                     $item_a_options = [
                         'id' => uniqid(),
                         'data-toggle' => 'tab',
